@@ -8,6 +8,8 @@ import json
 import sqlite3
 import datetime
 
+
+#导入配置
 import sys
 sys.path.append('..')
 import color_setting as cs
@@ -96,7 +98,7 @@ class color_loggly(loggly_info):
         self.query = 'json.type:"game_start"'
         self.fromtime = '-24h'
         self.untiltime = 'now'
-        self.size = '100' #此处最大值为1000
+        self.size = '1000' #此处最大值为1000
         self.authorization = c_authorization
         self.table = 'game_start'
     
@@ -110,7 +112,7 @@ class color_loggly(loggly_info):
             cs.execute('''create table {} 
                         (gameVersion text,
                         language text,
-                        
+                        new_user text,
                         biAppName text,
                         logId text unique,
                         utcTime text,
@@ -131,12 +133,25 @@ class color_loggly(loggly_info):
                         );'''.format(self.table))
         except:
             pass
-
+        n = 0
         for one_data in data_list:
-            print(one_data)
-            conn.execute('insert into {} VALUES ("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}")'.format(self.table, one_data['gameVersion'], one_data['language'], one_data['biAppName'], one_data['logId'], one_data['utcTime'], one_data['userId'], one_data['buildEnv'], one_data['clientId'], one_data['nation'], one_data['clientTime'], one_data['platform'], one_data['buildNo'], one_data['version'], one_data['completed_num'], one_data['valueToSum'], one_data['play_times'], one_data['type'], one_data['groupId'], one_data['iap_status']))
+            #print(one_data)
+            # for k in one_data.keys():
+            #     print('one_data.get["{}",default="null"]'.format(k))
+            # break
+            
+            try:
+                conn.execute('insert into {} VALUES ("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}")'.format(self.table, one_data['gameVersion'], one_data['language'],one_data.setdefault('new_user',"null"), one_data['biAppName'], one_data['logId'], one_data.setdefault('utcTime',"null"), one_data.setdefault('userId',"null"), one_data['buildEnv'], one_data['clientId'], one_data['nation'], one_data['clientTime'], one_data['platform'], one_data['buildNo'], one_data['version'], one_data['completed_num'], one_data['valueToSum'], one_data['play_times'], one_data['type'], one_data['groupId'], one_data['iap_status']))
+                n += 1
+                #print(n)
+            except:
+                #print('重复')
+                pass
+        
         conn.commit()
         conn.close()
+        print('本次插入{}条数据'.format(n))
+        return n
         
 
     #解析self表的数据(暂时吴用)
