@@ -198,6 +198,6 @@ if __name__ == '__main__':
         num = loggly.insert_sql(data_list)
         endtime = datetime.datetime.now()
         print('第{}次运行，本次记录了{}条数据，共运行了{}秒！'.format(n,num,(endtime - starttime).seconds))
-        time.sleep(60000)
+        time.sleep(600)
         
 
