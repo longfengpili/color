@@ -8,6 +8,7 @@ import json
 import sqlite3
 import datetime
 import time
+import random
 
 
 #导入配置
@@ -19,10 +20,24 @@ c_username = cs.username
 c_password = cs.password
 c_authorization = cs.authorization
 
+#增加每步时间统计
+def cost_time(func):
+    def wrapper(*args, **kw):
+        #print('run【{}】'.format(func.__name__))
+        print('{},【{}】begin!'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),(func.__name__)))
+        a = datetime.datetime.now()
+        f = func(*args, **kw)
+        b = datetime.datetime.now()
+        print('{},【{}】end,本次共运行了{}秒!'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),(func.__name__),(b - a).seconds))
+        return f
+    return wrapper
+
+
 
 
 class loggly_info(object):
 
+    @cost_time
     def __init__(self, loggly_name=None, username=None, password=None, q='*', fromtime='-10m', untiltime='now', size='30',authorization=None):
         self.loggly_name = loggly_name
         self.username = username
@@ -34,6 +49,7 @@ class loggly_info(object):
         self.authorization = authorization
 
     #获取rsid
+    @cost_time
     def getRsid(self):
         url = 'https://{}.loggly.com/apiv2/search?q={}&from={}&until={}&size={}'.format(
             self.loggly_name, self.query, self.fromtime, self.untiltime, self.size)
@@ -54,6 +70,7 @@ class loggly_info(object):
         return Rsid
 
     #下载
+    @cost_time
     def download_loggly_info(self, Rsid):
         url = 'http://{}.loggly.com/apiv2/events?rsid={}'.format(
             self.loggly_name,Rsid)
@@ -66,7 +83,22 @@ class loggly_info(object):
             'username': self.username,
             'password': self.password
         }
-        response = requests.get(url, params=params, headers=headers)
+
+        try_num = 0
+        #尝试请求10次
+        while try_num < 100:
+            try:
+                response = requests.get(url, params=params, headers=headers,timeout=2)
+                print('success')
+                try_num = try_num + 10000
+            except requests.exceptions.Timeout:
+                try_num += 1
+                print('fail')
+                wait_time = random.uniform(4,6)
+                time.sleep(wait_time)
+                #response = requests.get(url, params=params, headers=headers,timeout=2)
+                #print(response.status_code)
+        
         html = response.text
         #print(html)
         event_count = json.loads(html)['total_events']
@@ -76,6 +108,7 @@ class loggly_info(object):
         return html
 
     #解析数据
+    @cost_time
     def parse_loggly(self,html):
         data = json.loads(html)['events']
         #print(data_next_url)
@@ -95,6 +128,7 @@ class loggly_info(object):
 #特定的数据表type
 class color_loggly(loggly_info):
 
+    #@cost_time
     def __init__(self):
         self.loggly_name = c_loggly_name
         self.username = c_username
@@ -107,6 +141,7 @@ class color_loggly(loggly_info):
         self.table = 'game_start'
     
     #根据特定的数据写入数据库
+    #@cost_time
     def insert_sql(self,data_list):
         conn = sqlite3.connect(
                     'C:\workspace\loggly\colordb\{}.db'.format(self.loggly_name), timeout=5)
@@ -156,20 +191,17 @@ class color_loggly(loggly_info):
         conn.close()
         with open('C:\workspace\loggly\colordb\log.txt','a+',encoding='utf-8') as f:
             f.write('{},本次插入{}条数据'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),n))
+            f.write('\n')
         print('{},本次插入{}条数据'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),n))
         return n
     
 if __name__ == '__main__':
+    starttime = datetime.datetime.now()
     loggly = color_loggly()
     rsid = loggly.getRsid()
     html = loggly.download_loggly_info(rsid)
     data_list = loggly.parse_loggly(html)
-    loggly.insert_sql(data_list)
+    num = loggly.insert_sql(data_list)
+    endtime = datetime.datetime.now()
+    print('本次记录了{}条数据，共运行了{}秒'.format(num,(endtime - starttime).seconds))
 
-    # starttime = datetime.datetime.now()
-    # golf = golf_loggly_reconnect()
-    # html = golf.download_loggly()
-    # data_list,data_next_url = golf.parse_loggly(html)
-    # num = golf.parse_loggly_reconnect(data_list,data_next_url)
-    # endtime = datetime.datetime.now()
-    # print('本次记录了{}条数据，共运行了{}秒'.format(num,(endtime - starttime).seconds))
