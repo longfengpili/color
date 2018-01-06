@@ -7,6 +7,7 @@ import requests
 import json
 import sqlite3
 import datetime
+import time
 
 
 #导入配置
@@ -32,7 +33,7 @@ class loggly_info(object):
         self.size = size
         self.authorization = authorization
 
-    #下载初始网页，传入数据参数
+    #获取rsid
     def getRsid(self):
         url = 'https://{}.loggly.com/apiv2/search?q={}&from={}&until={}&size={}'.format(
             self.loggly_name, self.query, self.fromtime, self.untiltime, self.size)
@@ -52,7 +53,7 @@ class loggly_info(object):
         #print(Rsid)
         return Rsid
 
-    #下载nextpage
+    #下载
     def download_loggly_info(self, Rsid):
         url = 'http://{}.loggly.com/apiv2/events?rsid={}'.format(
             self.loggly_name,Rsid)
@@ -68,7 +69,10 @@ class loggly_info(object):
         response = requests.get(url, params=params, headers=headers)
         html = response.text
         #print(html)
-        event_count = json.loads(html)['total_events']        
+        event_count = json.loads(html)['total_events']
+        if event_count > int(self.size):
+            print('{},此处数据条数超过{2},实际{1}条'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),event_count,self.size))
+            sys.exit()
         return html
 
     #解析数据
@@ -96,9 +100,9 @@ class color_loggly(loggly_info):
         self.username = c_username
         self.password = c_password
         self.query = 'json.type:"game_start"'
-        self.fromtime = '-24h'
+        self.fromtime = '-2h'
         self.untiltime = 'now'
-        self.size = '1000' #此处最大值为1000
+        self.size = '5000' #此处最大值为5000
         self.authorization = c_authorization
         self.table = 'game_start'
     
@@ -150,7 +154,9 @@ class color_loggly(loggly_info):
         
         conn.commit()
         conn.close()
-        print('本次插入{}条数据'.format(n))
+        with open('C:\workspace\loggly\colordb\log.txt','a+',encoding='utf-8') as f:
+            f.write('{},本次插入{}条数据'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),n))
+        print('{},本次插入{}条数据'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),n))
         return n
     
 if __name__ == '__main__':
