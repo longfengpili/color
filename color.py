@@ -9,6 +9,7 @@ import sqlite3
 import datetime
 import time
 import random
+from retrying import retry
 
 
 #导入配置
@@ -70,7 +71,7 @@ class loggly_info(object):
         return Rsid
 
     #下载
-    @cost_time
+    @retry(wait_random_min=1000, wait_random_max=6000)
     def download_loggly_info(self, Rsid):
         url = 'http://{}.loggly.com/apiv2/events?rsid={}'.format(
             self.loggly_name,Rsid)
@@ -84,23 +85,8 @@ class loggly_info(object):
             'password': self.password
         }
 
-        try_num = 0
-        #尝试请求10次
-        while try_num < 100:
-            try:
-                response = requests.get(url, params=params, headers=headers,timeout=2)
-                print('success')
-                try_num = try_num + 10000
-            except requests.exceptions.Timeout:
-                try_num += 1
-                print('fail')
-                wait_time = random.uniform(4,6)
-                time.sleep(wait_time)
-                #response = requests.get(url, params=params, headers=headers,timeout=2)
-                #print(response.status_code)
-        
+        response = requests.get(url, params=params, headers=headers,timeout=2)
         html = response.text
-        #print(html)
         event_count = json.loads(html)['total_events']
         if event_count > int(self.size):
             print('{},此处数据条数超过{2},实际{1}条'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),event_count,self.size))
