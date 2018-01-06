@@ -152,23 +152,6 @@ class color_loggly(loggly_info):
         conn.close()
         print('本次插入{}条数据'.format(n))
         return n
-        
-
-    #解析self表的数据(暂时吴用)
-    def parse_loggly_reconnect(self,data_list):
-        num = 0
-        while data_next_url != 'none':
-            #print(len(data_list), '\n', data_next_url)
-            self.insert_sql(data_list)
-            html = self.download_loggly_next(data_next_url)
-            data_list,data_next_url = self.parse_loggly(html)
-            num += len(data_list)
-        else:
-            #print(len(data_list))
-            self.insert_sql(data_list)
-            num += len(data_list)
-            pass
-        return num
     
 if __name__ == '__main__':
     loggly = color_loggly()
