@@ -25,12 +25,16 @@ c_authorization = cs.authorization
 def cost_time(func):
     def wrapper(*args, **kw):
         #print('run【{}】'.format(func.__name__))
-        print('{},【{}】begin!'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),(func.__name__)))
+        start = '{},【{}】begin!'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),(func.__name__))
+        print(start)
         a = datetime.datetime.now()
-        f = func(*args, **kw)
+        fn = func(*args, **kw)
         b = datetime.datetime.now()
-        print('{},【{}】end,本次共运行了{}秒!'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),(func.__name__),(b - a).seconds))
-        return f
+        end = '{},【{}】end,本次共运行了{}秒!'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),(func.__name__),(b - a).seconds)
+        with open('C:\workspace\loggly\colordb\detailed_log.txt','a+',encoding='utf-8') as f:
+            f.write('{}\n{}\n'.format(start,end))
+        print(end)
+        return fn
     return wrapper
 
 
@@ -71,11 +75,12 @@ class loggly_info(object):
         return Rsid
 
     #下载
+    @cost_time
     @retry(wait_random_min=1000, wait_random_max=6000)
     def download_loggly_info(self, Rsid):
         url = 'http://{}.loggly.com/apiv2/events?rsid={}'.format(
             self.loggly_name,Rsid)
-        print(url)
+        #print(url)
         headers = {
             'authorization': self.authorization,
             'user - agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER'
@@ -120,7 +125,7 @@ class color_loggly(loggly_info):
         self.username = c_username
         self.password = c_password
         self.query = 'json.type:"game_start"'
-        self.fromtime = '-2h'
+        self.fromtime = '-1h'
         self.untiltime = 'now'
         self.size = '5000' #此处最大值为5000
         self.authorization = c_authorization
@@ -182,12 +187,17 @@ class color_loggly(loggly_info):
         return n
     
 if __name__ == '__main__':
-    starttime = datetime.datetime.now()
-    loggly = color_loggly()
-    rsid = loggly.getRsid()
-    html = loggly.download_loggly_info(rsid)
-    data_list = loggly.parse_loggly(html)
-    num = loggly.insert_sql(data_list)
-    endtime = datetime.datetime.now()
-    print('本次记录了{}条数据，共运行了{}秒'.format(num,(endtime - starttime).seconds))
+    n =0
+    while True:
+        n += 1
+        starttime = datetime.datetime.now()
+        loggly = color_loggly()
+        rsid = loggly.getRsid()
+        html = loggly.download_loggly_info(rsid)
+        data_list = loggly.parse_loggly(html)
+        num = loggly.insert_sql(data_list)
+        endtime = datetime.datetime.now()
+        print('第{}次运行，本次记录了{}条数据，共运行了{}秒！'.format(n,num,(endtime - starttime).seconds))
+        time.sleep(60000)
+        
 
