@@ -94,7 +94,6 @@ class loggly_info(object):
         response = requests.get(url, params=params, headers=headers,timeout=10)
         html = response.text
         event_count = json.loads(html)['total_events']
-        print(type(event_count))
         if event_count > int(self.size):
             error = '{0},【error】此处数据条数超过{2},实际{1}条'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),event_count,self.size)
             print(error)
