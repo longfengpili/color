@@ -21,7 +21,7 @@ import color_setting as cs
 c_loggly_name = cs.loggly_name
 c_username = cs.username
 c_password = cs.password
-c_authorization = cs.authorization
+c_timeinterval = cs.timeinterval
 
 #增加每步时间统计
 def cost_time(func):
@@ -63,7 +63,7 @@ class loggly_info(object):
 
     #获取rsid
     @cost_time
-    #@retry
+    @retry
     def getRsid(self):
         url = 'https://{}.loggly.com/apiv2/search?q={}&from={}&until={}&size={}'.format(
             self.loggly_name, self.query, self.fromtime, self.untiltime, self.size)
@@ -136,7 +136,7 @@ class color_loggly(loggly_info):
         self.username = c_username
         self.password = c_password
         self.query = 'json.type:"game_start"'
-        self.fromtime = '-1h'
+        self.fromtime = c_timeinterval
         self.untiltime = 'now'
         self.size = '5000' #此处最大值为5000
         self.table = 'game_start'
