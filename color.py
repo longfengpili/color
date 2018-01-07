@@ -55,6 +55,7 @@ class loggly_info(object):
 
     #获取rsid
     @cost_time
+    @retry
     def getRsid(self):
         url = 'https://{}.loggly.com/apiv2/search?q={}&from={}&until={}&size={}'.format(
             self.loggly_name, self.query, self.fromtime, self.untiltime, self.size)
@@ -76,7 +77,7 @@ class loggly_info(object):
 
     #下载
     @cost_time
-    @retry(wait_random_min=1000, wait_random_max=6000)
+    @retry(wait_random_min=1000, wait_random_max=6000,stop_max_attempt_number=100)
     def download_loggly_info(self, Rsid):
         url = 'http://{}.loggly.com/apiv2/events?rsid={}'.format(
             self.loggly_name,Rsid)
@@ -90,12 +91,17 @@ class loggly_info(object):
             'password': self.password
         }
 
-        response = requests.get(url, params=params, headers=headers,timeout=2)
+        response = requests.get(url, params=params, headers=headers,timeout=10)
         html = response.text
         event_count = json.loads(html)['total_events']
+        print(type(event_count))
         if event_count > int(self.size):
-            print('{0},此处数据条数超过{2},实际{1}条'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),event_count,self.size))
-            sys.exit()
+            error = '{0},【error】此处数据条数超过{2},实际{1}条'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),event_count,self.size)
+            print(error)
+            with open('C:\workspace\loggly\colordb\log.txt','a+',encoding='utf-8') as f:
+                f.write(error)
+                f.write('\n')
+            #sys.exit(0)
         return html
 
     #解析数据
@@ -198,6 +204,6 @@ if __name__ == '__main__':
         num = loggly.insert_sql(data_list)
         endtime = datetime.datetime.now()
         print('第{}次运行，本次记录了{}条数据，共运行了{}秒！'.format(n,num,(endtime - starttime).seconds))
-        time.sleep(600)
+        time.sleep(60)
         
 
