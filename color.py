@@ -10,6 +10,8 @@ import datetime
 import time
 import random
 from retrying import retry
+import base64
+import re
 
 
 #导入配置
@@ -43,7 +45,7 @@ def cost_time(func):
 class loggly_info(object):
 
     @cost_time
-    def __init__(self, loggly_name=None, username=None, password=None, q='*', fromtime='-10m', untiltime='now', size='30',authorization=None):
+    def __init__(self, loggly_name=None, username=None, password=None, q='*', fromtime='-10m', untiltime='now', size='30'):
         self.loggly_name = loggly_name
         self.username = username
         self.password = password
@@ -51,18 +53,24 @@ class loggly_info(object):
         self.fromtime =fromtime
         self.untiltime = untiltime
         self.size = size
-        self.authorization = authorization
+        
+    def authorization(self):
+        info = '{}:{}'.format(self.username,self.password).encode('utf-8')
+        authorization = str(base64.b64encode(info))
+        authorization = re.findall("b'(.*?)'",authorization)[0]
+        authorization = 'Basic {}'.format(authorization)
+        return authorization
 
     #获取rsid
     @cost_time
-    @retry
+    #@retry
     def getRsid(self):
         url = 'https://{}.loggly.com/apiv2/search?q={}&from={}&until={}&size={}'.format(
             self.loggly_name, self.query, self.fromtime, self.untiltime, self.size)
         #print(url)
         headers = {
-            'authorization':self.authorization,
-            'user - agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER'
+            'authorization':self.authorization()
+            #'user - agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER'
         }
         params = {
             'username':self.username,
@@ -83,8 +91,8 @@ class loggly_info(object):
             self.loggly_name,Rsid)
         #print(url)
         headers = {
-            'authorization': self.authorization,
-            'user - agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER'
+            'authorization': self.authorization()
+            #'user - agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36 LBBROWSER'
         }
         params = {
             'username': self.username,
@@ -131,7 +139,6 @@ class color_loggly(loggly_info):
         self.fromtime = '-1h'
         self.untiltime = 'now'
         self.size = '5000' #此处最大值为5000
-        self.authorization = c_authorization
         self.table = 'game_start'
     
     #根据特定的数据写入数据库
