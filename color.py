@@ -22,6 +22,8 @@ c_loggly_name = cs.loggly_name
 c_username = cs.username
 c_password = cs.password
 c_timeinterval = cs.timeinterval
+c_runinterval = int(cs.runinterval)
+
 
 #增加每步时间统计
 def cost_time(func):
@@ -199,7 +201,7 @@ class color_loggly(loggly_info):
 if __name__ == '__main__':
     n =0
     lasttime = datetime.datetime(2018,1,7,13,00,00) #下次执行时间
-    runinterval = 1 #每次执行时间间隔
+    runinterval = c_runinterval #每次执行时间间隔(单位：分)
     while True:
         now = datetime.datetime.now()
         starttime = datetime.datetime(now.year,now.month,now.day,now.hour,now.minute,now.second)
