@@ -198,16 +198,22 @@ class color_loggly(loggly_info):
     
 if __name__ == '__main__':
     n =0
+    lasttime = datetime.datetime(2018,1,7,13,00,00) #下次执行时间
+    runinterval = 1 #每次执行时间间隔
     while True:
-        n += 1
-        starttime = datetime.datetime.now()
-        loggly = color_loggly()
-        rsid = loggly.getRsid()
-        html = loggly.download_loggly_info(rsid)
-        data_list = loggly.parse_loggly(html)
-        num = loggly.insert_sql(data_list)
-        endtime = datetime.datetime.now()
-        print('第{}次运行，本次记录了{}条数据，共运行了{}秒！'.format(n,num,(endtime - starttime).seconds))
-        time.sleep(60)
-        
+        now = datetime.datetime.now()
+        starttime = datetime.datetime(now.year,now.month,now.day,now.hour,now.minute,now.second)
+        if starttime == lasttime:
+            loggly = color_loggly()
+            rsid = loggly.getRsid()
+            html = loggly.download_loggly_info(rsid)
+            data_list = loggly.parse_loggly(html)
+            num = loggly.insert_sql(data_list)
+            endtime = datetime.datetime.now()
+            n += 1
+            print('第{}次运行，本次记录了{}条数据，共运行了{}秒！'.format(n,num,(endtime - starttime).seconds))
+        elif starttime < lasttime:
+            pass
+        elif starttime > lasttime:
+            lasttime = lasttime + datetime.timedelta(minutes=runinterval)
 
