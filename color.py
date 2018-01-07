@@ -108,8 +108,6 @@ class loggly_info(object):
     @cost_time
     def parse_loggly(self,html):
         data = json.loads(html)['events']
-        #print(data_next_url)
-        #print(len(data))
         data_list = []
         for i in range(0,len(data)):
             one_data = data[i]['event']['json']
